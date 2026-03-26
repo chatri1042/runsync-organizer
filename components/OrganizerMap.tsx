@@ -276,13 +276,12 @@ export default function OrganizerMap({
     <APIProvider apiKey={apiKey} libraries={['visualization', 'maps']}>
       <div className="flex-1 relative">
         <Map
-          mapId="runsync-organizer-map"
+          mapId="39cc42d9824655864cbd9c34"
           defaultCenter={{ lat: centerLat, lng: centerLng }}
           defaultZoom={13}
           disableDefaultUI
           gestureHandling="greedy"
           className="w-full h-full"
-          colorScheme="DARK"
         >
           {gpxPoints.length > 0 && <GpxRoute points={gpxPoints} />}
           <LeaderMarker runners={runners} />
