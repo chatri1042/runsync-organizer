@@ -24,6 +24,22 @@ function parseGPX(text: string): google.maps.LatLngLiteral[] {
   return points;
 }
 
+// ─── KML Parser ───────────────────────────────────────────────────────────────
+function parseKML(text: string): google.maps.LatLngLiteral[] {
+  const parser = new DOMParser();
+  const xml    = parser.parseFromString(text, 'application/xml');
+  const points: google.maps.LatLngLiteral[] = [];
+  xml.querySelectorAll('coordinates').forEach(node => {
+    node.textContent?.trim().split(/\s+/).forEach(coord => {
+      const [lngStr, latStr] = coord.split(',');
+      const lat = parseFloat(latStr);
+      const lng = parseFloat(lngStr);
+      if (!isNaN(lat) && !isNaN(lng)) points.push({ lat, lng });
+    });
+  });
+  return points;
+}
+
 // ─── GPX Route Polyline ───────────────────────────────────────────────────────
 function GpxRoute({ points }: { points: google.maps.LatLngLiteral[] }) {
   const map     = useMap();
@@ -221,9 +237,11 @@ function GpxUploadButton({ onLoad, hasRoute, onClear }: {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      const pts = parseGPX(ev.target?.result as string);
+      const text  = ev.target?.result as string;
+      const isKml = file.name.toLowerCase().endsWith('.kml');
+      const pts   = isKml ? parseKML(text) : parseGPX(text);
       if (pts.length > 0) onLoad(pts);
-      else alert('ไม่พบข้อมูลพิกัดใน GPX file');
+      else alert(`ไม่พบข้อมูลพิกัดใน ${isKml ? 'KML' : 'GPX'} file`);
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -240,8 +258,8 @@ function GpxUploadButton({ onLoad, hasRoute, onClear }: {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
         </svg>
-        {hasRoute ? `✓ GPX โหลดแล้ว (${(0).toLocaleString()} จุด)` : 'อัพโหลด GPX Route'}
-        <input type="file" accept=".gpx" className="hidden" onChange={handleFile} />
+        {hasRoute ? `✓ Route โหลดแล้ว` : 'อัพโหลด GPX / KML Route'}
+        <input type="file" accept=".gpx,.kml" className="hidden" onChange={handleFile} />
       </label>
       {hasRoute && (
         <button onClick={onClear}
