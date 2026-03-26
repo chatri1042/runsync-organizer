@@ -282,18 +282,15 @@ export default function OrganizerMap({
           gestureHandling="greedy"
           className="w-full h-full"
           styles={[
-            { featureType: 'all', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-            { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
-            { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
-            { featureType: 'administrative', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-            { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+            // ซ่อนทุกอย่าง ยกเว้นโครงสร้างถนนและชื่อเมือง
+            { featureType: 'all', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+            { featureType: 'administrative.locality', elementType: 'labels.text', stylers: [{ visibility: 'on' }, { color: '#555566' }] },
+            { featureType: 'road.highway', elementType: 'labels.text', stylers: [{ visibility: 'on' }, { color: '#444455' }] },
             { featureType: 'landscape', stylers: [{ color: '#1a1d27' }] },
-            { featureType: 'water', stylers: [{ color: '#0f1520' }] },
-            { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2d3a' }] },
-            { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a3d4a' }] },
-            { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#666680' }] },
-            { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#888899' }] },
-            { featureType: 'administrative.neighborhood', elementType: 'labels.text.fill', stylers: [{ color: '#555566' }] },
+            { featureType: 'water', stylers: [{ color: '#0d1018' }] },
+            { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#252830' }] },
+            { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#32353f' }] },
+            { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#2a2d38' }] },
           ]}
         >
           {gpxPoints.length > 0 && <GpxRoute points={gpxPoints} />}
