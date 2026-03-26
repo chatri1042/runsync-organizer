@@ -283,11 +283,6 @@ export default function OrganizerMap({
           gestureHandling="greedy"
           className="w-full h-full"
           colorScheme="DARK"
-          styles={[
-            { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
-            { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
-            { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-          ]}
         >
           {gpxPoints.length > 0 && <GpxRoute points={gpxPoints} />}
           <LeaderMarker runners={runners} />
