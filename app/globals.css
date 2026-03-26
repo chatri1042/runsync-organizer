@@ -12,6 +12,15 @@ html, body {
   color: #1A1A1A;
 }
 
+/* Force text colors for light theme */
+.text-white    { color: #1A1A1A !important; }
+.text-gray-100 { color: #1A1A1A !important; }
+.text-gray-200 { color: #333333 !important; }
+.text-gray-300 { color: #444444 !important; }
+.text-gray-400 { color: #555555 !important; }
+.text-gray-500 { color: #666666 !important; }
+.text-gray-600 { color: #777777 !important; }
+
 /* SOS pulse animation */
 @keyframes sos-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
