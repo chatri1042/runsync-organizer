@@ -8,8 +8,8 @@
 
 html, body {
   height: 100%;
-  background: #0F1117;
-  color: #E2E8F0;
+  background: #FFF8E1;
+  color: #1A1A1A;
 }
 
 /* SOS pulse animation */
@@ -26,5 +26,5 @@ html, body {
 
 /* Custom scrollbar */
 ::-webkit-scrollbar       { width: 4px; }
-::-webkit-scrollbar-track  { background: #1A1D27; }
-::-webkit-scrollbar-thumb  { background: #3A3D4A; border-radius: 2px; }
+::-webkit-scrollbar-track  { background: #FFF3C4; }
+::-webkit-scrollbar-thumb  { background: #E0CFA0; border-radius: 2px; }
