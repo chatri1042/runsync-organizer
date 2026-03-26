@@ -276,17 +276,24 @@ export default function OrganizerMap({
     <APIProvider apiKey={apiKey} libraries={['visualization', 'maps']}>
       <div className="flex-1 relative">
         <Map
-          mapId="runsync-organizer-map"
           defaultCenter={{ lat: centerLat, lng: centerLng }}
           defaultZoom={13}
           disableDefaultUI
           gestureHandling="greedy"
           className="w-full h-full"
-          colorScheme="DARK"
           styles={[
+            { featureType: 'all', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
             { featureType: 'poi', elementType: 'all', stylers: [{ visibility: 'off' }] },
             { featureType: 'transit', elementType: 'all', stylers: [{ visibility: 'off' }] },
+            { featureType: 'administrative', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
             { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+            { featureType: 'landscape', stylers: [{ color: '#1a1d27' }] },
+            { featureType: 'water', stylers: [{ color: '#0f1520' }] },
+            { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2d3a' }] },
+            { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3a3d4a' }] },
+            { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#666680' }] },
+            { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#888899' }] },
+            { featureType: 'administrative.neighborhood', elementType: 'labels.text.fill', stylers: [{ color: '#555566' }] },
           ]}
         >
           {gpxPoints.length > 0 && <GpxRoute points={gpxPoints} />}
