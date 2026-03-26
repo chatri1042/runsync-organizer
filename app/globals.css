@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  background: #0F1117;
+  color: #E2E8F0;
+}
+
+/* SOS pulse animation */
+@keyframes sos-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.15); }
+}
+.sos-pulse {
+  animation: sos-pulse 1s ease-in-out infinite;
+}
+
+/* Hide Google Maps default UI clutter */
+.gm-style-cc, .gmnoprint { display: none !important; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track  { background: #1A1D27; }
+::-webkit-scrollbar-thumb  { background: #3A3D4A; border-radius: 2px; }
