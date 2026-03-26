@@ -52,16 +52,16 @@ function GpxRoute({ points }: { points: google.maps.LatLngLiteral[] }) {
     const glowLine = new mapsLib.Polyline({
       map,
       path:          points,
-      strokeColor:   '#4CAF50',
-      strokeOpacity: 0.2,
+      strokeColor:   '#A855F7',
+      strokeOpacity: 0.25,
       strokeWeight:  10,
     });
 
-    // เส้นหลัก solid สีเขียว
+    // เส้นหลัก solid สีม่วง
     const mainLine = new mapsLib.Polyline({
       map,
       path:          points,
-      strokeColor:   '#4CAF50',
+      strokeColor:   '#A855F7',
       strokeOpacity: 0.9,
       strokeWeight:  4,
     });
@@ -310,8 +310,8 @@ export default function OrganizerMap({
             </div>
           ))}
           <div className="flex items-center gap-2 pt-1 border-t border-border">
-            <div className="w-8 border-t-2 border-dashed border-green-500" />
-            <span className="text-xs text-gray-300">เส้นทางวิ่ง GPX</span>
+            <div className="w-8 border-t-2 border-solid border-purple-500" />
+            <span className="text-xs text-gray-300">เส้นทางวิ่ง GPX/KML</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-brand" />
