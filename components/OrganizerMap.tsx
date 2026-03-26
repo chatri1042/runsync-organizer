@@ -275,16 +275,6 @@ export default function OrganizerMap({
   return (
     <APIProvider apiKey={apiKey} libraries={['visualization', 'maps']}>
       <div className="flex-1 relative">
-
-        {/* GPX Upload Button */}
-        <div className="absolute top-3 left-3 z-10">
-          <GpxUploadButton
-            onLoad={pts => setGpxPoints(pts)}
-            hasRoute={gpxPoints.length > 0}
-            onClear={() => setGpxPoints([])}
-          />
-        </div>
-
         <Map
           mapId="runsync-organizer-map"
           defaultCenter={{ lat: centerLat, lng: centerLng }}
