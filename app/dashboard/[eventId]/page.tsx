@@ -28,17 +28,29 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      const text = ev.target?.result as string;
+      const text  = ev.target?.result as string;
+      const isKml = file.name.toLowerCase().endsWith('.kml');
       const parser = new DOMParser();
-      const xml = parser.parseFromString(text, 'application/xml');
+      const xml    = parser.parseFromString(text, 'application/xml');
       const pts: {lat:number;lng:number}[] = [];
-      xml.querySelectorAll('trkpt, rtept, wpt').forEach(node => {
-        const lat = parseFloat(node.getAttribute('lat') ?? '');
-        const lng = parseFloat(node.getAttribute('lon') ?? '');
-        if (!isNaN(lat) && !isNaN(lng)) pts.push({ lat, lng });
-      });
+      if (isKml) {
+        xml.querySelectorAll('coordinates').forEach(node => {
+          node.textContent?.trim().split(/\s+/).forEach(coord => {
+            const [lngStr, latStr] = coord.split(',');
+            const lat = parseFloat(latStr);
+            const lng = parseFloat(lngStr);
+            if (!isNaN(lat) && !isNaN(lng)) pts.push({ lat, lng });
+          });
+        });
+      } else {
+        xml.querySelectorAll('trkpt, rtept, wpt').forEach(node => {
+          const lat = parseFloat(node.getAttribute('lat') ?? '');
+          const lng = parseFloat(node.getAttribute('lon') ?? '');
+          if (!isNaN(lat) && !isNaN(lng)) pts.push({ lat, lng });
+        });
+      }
       if (pts.length > 0) setGpxPoints(pts);
-      else alert('ไม่พบข้อมูลพิกัดใน GPX file');
+      else alert(`ไม่พบข้อมูลพิกัดใน ${isKml ? 'KML' : 'GPX'} file`);
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -170,8 +182,8 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
-            {gpxPoints.length > 0 ? `✓ GPX (${gpxPoints.length} จุด)` : 'อัพโหลด GPX Route'}
-            <input type="file" accept=".gpx" className="hidden" onChange={handleGpxFile} />
+            {gpxPoints.length > 0 ? `✓ Route (${gpxPoints.length} จุด)` : 'อัพโหลด GPX / KML Route'}
+            <input type="file" accept=".gpx,.kml" className="hidden" onChange={handleGpxFile} />
           </label>
           {gpxPoints.length > 0 && (
             <button onClick={() => setGpxPoints([])}

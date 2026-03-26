@@ -53,27 +53,17 @@ function GpxRoute({ points }: { points: google.maps.LatLngLiteral[] }) {
       map,
       path:          points,
       strokeColor:   '#4CAF50',
-      strokeOpacity: 0.15,
-      strokeWeight:  12,
+      strokeOpacity: 0.2,
+      strokeWeight:  10,
     });
 
-    // เส้นหลัก dotted สีเขียวเหมือนแอป
+    // เส้นหลัก solid สีเขียว
     const mainLine = new mapsLib.Polyline({
       map,
       path:          points,
-      strokeOpacity: 0,
+      strokeColor:   '#4CAF50',
+      strokeOpacity: 0.9,
       strokeWeight:  4,
-      icons: [{
-        icon: {
-          path:          'M 0,-1 0,1',
-          strokeOpacity: 1,
-          scale:         4,
-          strokeColor:   '#4CAF50',
-          strokeWeight:  3,
-        },
-        offset: '0',
-        repeat: '16px',
-      }],
     });
 
     const bounds = new google.maps.LatLngBounds();
