@@ -10,6 +10,14 @@ import fs from 'fs';
 import path from 'path';
 
 function buildCredential() {
+  // 0) วิธีง่ายสุดสำหรับ Vercel: service account ทั้งไฟล์ encode เป็น base64 ใน env เดียว
+  //    (ไม่ต้องกังวลเรื่อง \n / เครื่องหมายคำพูดของ private key)
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
+  if (b64) {
+    const sa = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    return cert(sa);
+  }
+
   // 1) Production (Vercel): ใส่ค่าผ่าน env vars
   const projectId  = process.env.FIREBASE_ADMIN_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
