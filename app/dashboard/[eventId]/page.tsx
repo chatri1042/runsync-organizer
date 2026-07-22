@@ -513,7 +513,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
     <div className="h-screen bg-bg flex flex-col overflow-hidden">
 
       {/* ── Top bar ── */}
-      <header className="flex items-center gap-4 px-5 h-16 bg-surface border-b border-line shrink-0 z-30">
+      <header className="relative flex items-center gap-4 px-5 h-16 bg-surface border-b border-line shrink-0 z-30">
         <button onClick={() => setSideOpen(o => !o)}
                 className="w-10 h-10 rounded-xl border border-line text-sub hover:text-ink hover:bg-bg
                            flex items-center justify-center transition-colors" title="ซ่อน/แสดงเมนู">
@@ -534,6 +534,12 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
            className="hidden md:flex items-center gap-1.5 text-[14.5px] text-faint hover:text-brand transition-colors">
           ← เว็บหลัก
         </a>
+
+        {/* ชื่องานกลางจอ (desktop) */}
+        <div className="hidden lg:flex flex-col items-center absolute left-1/2 -translate-x-1/2 max-w-[34%] pointer-events-none">
+          <div className="text-[16px] font-bold text-ink truncate max-w-full">{event?.eventName ?? ''}</div>
+          <div className="text-[12px] text-faint font-en">{eventId}</div>
+        </div>
 
         <div className="ml-auto flex items-center gap-4">
           {/* โหมดคลีน: ซ่อนกล่องข้อมูล/สัญลักษณ์บนแผนที่ */}
@@ -798,21 +804,26 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
           {/* ── Bottom panel: รายชื่อนักวิ่ง ── */}
           <div className={`absolute left-4 right-4 bottom-3 z-20 bg-surface border border-line rounded-2xl
                            shadow-float flex flex-col overflow-hidden transition-transform duration-300
-                           ${panelMin ? 'translate-y-[calc(100%-56px)]' : ''}`}
+                           ${panelMin ? 'translate-y-[calc(100%-60px)]' : ''}`}
                style={{ maxHeight: '46%' }}>
-            <div className="flex items-center gap-3 px-4 py-2.5 border-b border-line shrink-0">
-              <span className="text-[16px] font-semibold whitespace-nowrap">รายชื่อนักวิ่ง</span>
+            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-line shrink-0 overflow-x-auto">
+              <button onClick={() => setPanelMin(m => !m)}
+                      title={panelMin ? 'ขยายรายชื่อ' : 'ย่อรายชื่อ'}
+                      className="shrink-0 p-1.5 rounded-lg text-faint hover:text-ink hover:bg-bg transition-colors">
+                <Icon d={IC.down} className={`transition-transform duration-300 ${panelMin ? 'rotate-180' : ''}`} />
+              </button>
+              <span className="text-[16px] font-semibold whitespace-nowrap shrink-0">รายชื่อนักวิ่ง</span>
 
-              <div className="flex-1 flex items-center gap-2 h-10 px-3.5 rounded-xl bg-bg border border-line
+              <div className="flex-1 min-w-[120px] flex items-center gap-2 h-10 px-3.5 rounded-xl bg-bg border border-line
                               focus-within:border-brand transition-colors text-faint">
                 <Icon d={IC.search} size={16} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
                        placeholder="ค้นหาชื่อ หรือ BIB..."
-                       className="flex-1 bg-transparent outline-none text-[15px] text-ink placeholder:text-faint" />
+                       className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-ink placeholder:text-faint" />
               </div>
 
               {/* GPX upload */}
-              <label className={`h-10 px-3.5 rounded-xl border text-[14px] font-medium flex items-center gap-2
+              <label className={`shrink-0 h-10 px-3.5 rounded-xl border text-[14px] font-medium flex items-center gap-2
                                  cursor-pointer transition-colors whitespace-nowrap
                                  ${gpxPoints.length > 0
                                    ? 'border-green-600 text-green-700 bg-green-50'
@@ -823,18 +834,13 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
               </label>
               {gpxPoints.length > 0 && (
                 <button onClick={clearRoute} title="ลบเส้นทางออกจากงาน"
-                        className="text-[14px] text-faint hover:text-red-600 transition-colors">✕</button>
+                        className="shrink-0 text-[14px] text-faint hover:text-red-600 transition-colors">✕</button>
               )}
 
               <button onClick={handleExport}
-                      className="h-10 px-4 rounded-xl bg-brand hover:bg-brand-dk text-white text-[14.5px]
+                      className="shrink-0 h-10 px-4 rounded-xl bg-brand hover:bg-brand-dk text-white text-[14.5px]
                                  font-medium flex items-center gap-2 shadow-brand transition-colors whitespace-nowrap">
                 <Icon d={IC.export} size={16} /> ส่งออก CSV
-              </button>
-
-              <button onClick={() => setPanelMin(m => !m)}
-                      className="p-1.5 rounded-lg text-faint hover:text-ink hover:bg-bg transition-colors">
-                <Icon d={IC.down} className={`transition-transform duration-300 ${panelMin ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
