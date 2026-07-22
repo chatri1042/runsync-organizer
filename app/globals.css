@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,18 +10,15 @@
 
 html, body {
   height: 100%;
-  background: #FFF8E1;
-  color: #1A1A1A;
+  background: #F6F4EF;
+  color: #1C1917;
+  font-family: 'Kanit', sans-serif;
 }
 
-/* Force text colors for light theme */
-.text-white    { color: #1A1A1A !important; }
-.text-gray-100 { color: #1A1A1A !important; }
-.text-gray-200 { color: #333333 !important; }
-.text-gray-300 { color: #444444 !important; }
-.text-gray-400 { color: #555555 !important; }
-.text-gray-500 { color: #666666 !important; }
-.text-gray-600 { color: #777777 !important; }
+.font-num {
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
 
 /* SOS pulse animation */
 @keyframes sos-pulse {
@@ -30,10 +29,18 @@ html, body {
   animation: sos-pulse 1s ease-in-out infinite;
 }
 
+@keyframes soft-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+.soft-pulse {
+  animation: soft-pulse 1.5s ease-in-out infinite;
+}
+
 /* Hide Google Maps default UI clutter */
 .gm-style-cc, .gmnoprint { display: none !important; }
 
 /* Custom scrollbar */
-::-webkit-scrollbar       { width: 4px; }
-::-webkit-scrollbar-track  { background: #FFF3C4; }
-::-webkit-scrollbar-thumb  { background: #E0CFA0; border-radius: 2px; }
+::-webkit-scrollbar       { width: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #E7E2D9; border-radius: 3px; }

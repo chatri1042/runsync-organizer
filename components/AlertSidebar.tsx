@@ -37,10 +37,10 @@ function StatCard({
                   ${active ? 'border-current' : 'border-transparent hover:border-border'}`}
       style={{ backgroundColor: active ? `${color}20` : '#1A1D27', color }}
     >
-      <div className={`text-xl font-bold tabular-nums ${pulse && value > 0 ? 'sos-pulse' : ''}`}>
+      <div className={`text-2xl font-bold tabular-nums ${pulse && value > 0 ? 'sos-pulse' : ''}`}>
         {value}
       </div>
-      <div className="text-[10px] opacity-70 mt-0.5">{label}</div>
+      <div className="text-sm opacity-80 mt-0.5">{label}</div>
     </button>
   );
 }
@@ -68,32 +68,32 @@ function RunnerRow({
 
         {/* Rank */}
         {rank !== undefined && (
-          <span className="text-[10px] text-gray-500 w-5 shrink-0 tabular-nums">#{rank}</span>
+          <span className="text-sm text-gray-500 w-6 shrink-0 tabular-nums">#{rank}</span>
         )}
 
         {/* Name */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium text-white truncate">{runner.displayName}</span>
+            <span className="text-lg font-semibold text-white truncate">{runner.displayName}</span>
             {runner.bibNumber && (
-              <span className="text-[10px] text-gray-500 shrink-0">{runner.bibNumber}</span>
+              <span className="text-sm text-gray-500 shrink-0">{runner.bibNumber}</span>
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px]" style={{ color: cfg.color }}>{cfg.label}</span>
-            <span className="text-[11px] text-gray-500">·</span>
-            <span className="text-[11px] text-gray-500">{formatDistance(runner.distance)}</span>
+            <span className="text-sm font-medium" style={{ color: cfg.color }}>{cfg.label}</span>
+            <span className="text-sm text-gray-500">·</span>
+            <span className="text-sm text-gray-400">{formatDistance(runner.distance)}</span>
           </div>
         </div>
 
         {/* Track button */}
         <button
           onClick={e => { e.stopPropagation(); onTrack(); }}
-          className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all
+          className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-all
                       ${isTracked ? 'bg-brand text-white' : 'bg-border text-gray-400 hover:bg-brand/30'}`}
           title={isTracked ? 'หยุด track' : 'Track คนนี้'}
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -118,8 +118,8 @@ function RunnerRow({
 function DetailStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="text-center">
-      <div className="text-xs font-semibold text-white">{value}</div>
-      <div className="text-[10px] text-gray-500 mt-0.5">{label}</div>
+      <div className="text-base font-semibold text-white">{value}</div>
+      <div className="text-sm text-gray-500 mt-0.5">{label}</div>
     </div>
   );
 }
@@ -179,7 +179,7 @@ export default function AlertSidebar({
   ];
 
   return (
-    <div className="w-80 bg-bg border-l border-border flex flex-col overflow-hidden shrink-0">
+    <div className="w-96 bg-bg border-l border-border flex flex-col overflow-hidden shrink-0">
       {/* Stats row */}
       <div className="p-3 border-b border-border">
         <div className="flex gap-1.5">
@@ -195,7 +195,7 @@ export default function AlertSidebar({
             />
           ))}
         </div>
-        <div className="text-center text-[11px] text-gray-500 mt-2">
+        <div className="text-center text-sm text-gray-400 mt-2">
           รวม {stats.total} คน
           {trackedUserId && (
             <button onClick={() => onTrackRunner(null)}
@@ -220,7 +220,7 @@ export default function AlertSidebar({
             onChange={e => setSearch(e.target.value)}
             placeholder="ค้นหาชื่อ หรือ BIB..."
             className="w-full bg-surface border border-border rounded-xl pl-9 pr-4 py-2.5
-                       text-sm text-white placeholder-gray-600 focus:outline-none focus:border-brand"
+                       text-base text-white placeholder-gray-500 focus:outline-none focus:border-brand"
           />
           {search && (
             <button onClick={() => setSearch('')}
@@ -237,7 +237,7 @@ export default function AlertSidebar({
           <button
             key={f.mode}
             onClick={() => setFilterMode(prev => prev === f.mode ? 'all' : f.mode)}
-            className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border
                         ${filterMode === f.mode
                           ? 'bg-brand border-brand text-white'
                           : 'bg-surface border-border text-gray-400 hover:border-gray-500'}`}
@@ -249,7 +249,7 @@ export default function AlertSidebar({
 
       {/* Runner count */}
       <div className="px-3 py-1.5">
-        <span className="text-[11px] text-gray-500">
+        <span className="text-sm text-gray-400">
           แสดง {filteredRunners.length} คน
         </span>
       </div>
@@ -257,7 +257,7 @@ export default function AlertSidebar({
       {/* Runner list */}
       <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
         {filteredRunners.length === 0 ? (
-          <div className="text-center text-gray-500 text-sm mt-8">
+          <div className="text-center text-gray-500 text-base mt-8">
             {search ? 'ไม่พบนักวิ่งที่ค้นหา' : 'ไม่มีนักวิ่งในกลุ่มนี้'}
           </div>
         ) : (
