@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, onSnapshot, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, query, where, orderBy, updateDoc, addDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth, waitForAuth } from '@/lib/firebase';
 import {
@@ -48,6 +48,9 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
 
   const [rawRunners,     setRawRunners]     = useState<Omit<Runner, 'runnerStatus' | 'rank'>[]>([]);
   const [participants,   setParticipants]   = useState<Participant[]>([]);
+  const [partByUid,      setPartByUid]      = useState<Record<string, { docId: string; bib?: string }>>({});
+  const [bibEdit,        setBibEdit]        = useState<string | null>(null);
+  const [bibDraft,       setBibDraft]       = useState('');
   const [clubRegs,       setClubRegs]       = useState<Participant[]>([]);
   const [isClubEvent,    setIsClubEvent]    = useState(false);
   // id จริงของงานใน events/ — Event Code อาจเป็นชื่อจำง่ายที่ admin ตั้ง (organizer_events.realEventId)
@@ -282,9 +285,11 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
       const q = query(collection(db, 'event_participants'), where('eventId', '==', srcId));
       unsubscribe = onSnapshot(q, snapshot => {
         const seen = new Map<string, Participant>();
+        const pmap: Record<string, { docId: string; bib?: string }> = {};
         snapshot.docs.forEach(d => {
           const data = d.data();
           const userId = (data.userId as string) ?? d.id;
+          if (!pmap[userId]) pmap[userId] = { docId: d.id, bib: data.bibNumber as string | undefined };
           if (seen.has(userId)) return;   // กัน join ซ้ำหลาย doc
           seen.set(userId, {
             userId,
@@ -296,6 +301,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
           });
         });
         setParticipants(Array.from(seen.values()));
+        setPartByUid(pmap);
       }, err => {
         console.error('event_participants read error:', err);
       });
@@ -339,12 +345,25 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
       const offRoute = gpxPoints.length >= 2 && r.lat !== 0
         ? distanceToRouteMeters(r.lat, r.lng, gpxPoints) > OFF_ROUTE_THRESHOLD_M
         : false;
-      return { ...r, runnerStatus, offRoute, rank: 0 };
+      return { ...r, bibNumber: partByUid[r.userId]?.bib ?? r.bibNumber, runnerStatus, offRoute, rank: 0 };
     });
     list.sort((a, b) => b.distance - a.distance);
     list.forEach((r, i) => { r.rank = i + 1; });
     return list;
-  }, [rawRunners, event?.totalDistance, gpxPoints, lastUpdate]);
+  }, [rawRunners, event?.totalDistance, gpxPoints, lastUpdate, partByUid]);
+
+  async function saveBib(userId: string) {
+    const bib = bibDraft.trim();
+    const existing = partByUid[userId];
+    try {
+      if (existing?.docId) {
+        await updateDoc(doc(db, 'event_participants', existing.docId), { bibNumber: bib });
+      } else if (srcId) {
+        await addDoc(collection(db, 'event_participants'), { eventId: srcId, userId, bibNumber: bib });
+      }
+    } catch (e) { console.error('save bib error', e); }
+    setBibEdit(null);
+  }
 
   // ── เส้นทางผู้นำจาก history จริง (iOS เขียน liveLocations/{uid}/history ตั้งแต่ออกตัว) ──
   const leaderId = useMemo(
@@ -692,6 +711,26 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                     {' · '}เพซ <span className="font-num font-semibold text-ink">{formatPace(r.speed)}</span></div>
                   <div>อัพเดต {formatTimeAgo(r.updatedAt)}</div>
                   <div className="font-num text-[13.5px] text-faint">{r.lat.toFixed(6)}, {r.lng.toFixed(6)}</div>
+                </div>
+                {/* BIB — ผู้จัดกำหนด/แก้ได้ (เขียนลง event_participants) */}
+                <div className="mt-3 flex items-center gap-2 text-[14px]">
+                  <span className="text-faint w-[52px] shrink-0">BIB</span>
+                  {bibEdit === r.userId ? (
+                    <>
+                      <input autoFocus value={bibDraft} onChange={e => setBibDraft(e.target.value)}
+                             onKeyDown={e => { if (e.key === 'Enter') saveBib(r.userId); }}
+                             placeholder="เช่น B-0001"
+                             className="flex-1 h-8 px-2 rounded-lg border border-brand outline-none font-num text-[14px]" />
+                      <button onClick={() => saveBib(r.userId)} className="text-brand font-medium text-[13px]">บันทึก</button>
+                      <button onClick={() => setBibEdit(null)} className="text-faint text-[13px]">ยกเลิก</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-num font-semibold text-ink flex-1">{r.bibNumber || '—'}</span>
+                      <button onClick={() => { setBibEdit(r.userId); setBibDraft(r.bibNumber ?? ''); }}
+                              className="text-brand text-[13px] hover:underline shrink-0">{r.bibNumber ? 'แก้' : 'กำหนด'}</button>
+                    </>
+                  )}
                 </div>
                 {/* เบอร์โทร + ผู้ติดต่อฉุกเฉิน (private — ดึงจาก server ด้วย Admin SDK) */}
                 <div className="mt-3 pt-3 border-t border-line space-y-1.5 text-[14px]">
