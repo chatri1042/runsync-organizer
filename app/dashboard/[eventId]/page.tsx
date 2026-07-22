@@ -95,6 +95,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
   const [gpxPoints,      setGpxPoints]      = useState<{lat:number;lng:number}[]>([]);
   const [sideOpen,       setSideOpen]       = useState(true);
   const [panelMin,       setPanelMin]       = useState(false);
+  const [panelFull,      setPanelFull]      = useState(false);
   const [cleanMode,      setCleanMode]      = useState(false);
   const [toast,          setToast]          = useState('');
   const [teamOpen,       setTeamOpen]       = useState(false);
@@ -526,10 +527,16 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <span className="font-en font-extrabold text-lg tracking-tight group-hover:opacity-80 transition-opacity">
+          <span className="hidden lg:inline font-en font-extrabold text-lg tracking-tight group-hover:opacity-80 transition-opacity">
             RUNSYNC <span className="text-brand">RACE CONTROL</span>
           </span>
         </a>
+
+        {/* ชื่องาน (มือถือ/แท็บเล็ต) */}
+        <div className="lg:hidden min-w-0 flex-1">
+          <div className="font-bold text-[15px] text-ink truncate leading-tight">{event?.eventName ?? ''}</div>
+          <div className="text-[11px] text-faint font-en truncate">{eventId}</div>
+        </div>
         <a href={MAIN_SITE}
            className="hidden md:flex items-center gap-1.5 text-[14.5px] text-faint hover:text-brand transition-colors">
           ← เว็บหลัก
@@ -803,9 +810,10 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
 
           {/* ── Bottom panel: รายชื่อนักวิ่ง ── */}
           <div className={`absolute left-4 right-4 bottom-3 z-20 bg-surface border border-line rounded-2xl
-                           shadow-float flex flex-col overflow-hidden transition-transform duration-300
-                           ${panelMin ? 'translate-y-[calc(100%-60px)]' : ''}`}
-               style={{ maxHeight: '46%' }}>
+                           shadow-float flex flex-col overflow-hidden transition-all duration-300
+                           ${panelFull ? 'top-3' : ''}
+                           ${!panelFull && panelMin ? 'translate-y-[calc(100%-60px)]' : ''}`}
+               style={{ maxHeight: panelFull ? 'none' : '46%' }}>
             <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-line shrink-0 overflow-x-auto">
               <button onClick={() => setPanelMin(m => !m)}
                       title={panelMin ? 'ขยายรายชื่อ' : 'ย่อรายชื่อ'}
@@ -813,6 +821,12 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                 <Icon d={IC.down} className={`transition-transform duration-300 ${panelMin ? 'rotate-180' : ''}`} />
               </button>
               <span className="text-[16px] font-semibold whitespace-nowrap shrink-0">รายชื่อนักวิ่ง</span>
+              <button onClick={() => { setPanelFull(f => !f); setPanelMin(false); }}
+                      title={panelFull ? 'ย่อกลับ' : 'ดูเต็มจอ'}
+                      className="shrink-0 h-8 px-2.5 rounded-lg border border-line text-[13px] text-sub
+                                 hover:text-ink hover:bg-bg transition-colors whitespace-nowrap">
+                {panelFull ? 'ย่อ' : 'เต็มจอ'}
+              </button>
 
               <div className="flex-1 min-w-[120px] flex items-center gap-2 h-10 px-3.5 rounded-xl bg-bg border border-line
                               focus-within:border-brand transition-colors text-faint">
