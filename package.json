@@ -8,22 +8,24 @@
     "start": "next start"
   },
   "dependencies": {
+    "@googlemaps/markerclusterer": "^2.6.2",
+    "@vis.gl/react-google-maps": "^1.1.0",
+    "clsx": "^2.1.1",
+    "firebase": "^10.12.0",
+    "firebase-admin": "^12.1.0",
     "next": "14.2.0",
     "react": "^18",
-    "react-dom": "^18",
-    "firebase": "^10.12.0",
-    "@vis.gl/react-google-maps": "^1.1.0",
-    "clsx": "^2.1.1"
+    "react-dom": "^18"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "tailwindcss": "^3.4.1",
     "autoprefixer": "^10.0.1",
-    "postcss": "^8",
     "eslint": "^8",
-    "eslint-config-next": "14.2.0"
+    "eslint-config-next": "14.2.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
   }
 }
