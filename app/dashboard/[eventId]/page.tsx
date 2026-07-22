@@ -571,11 +571,6 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                                text-sub hover:bg-bg hover:text-ink transition-colors">
               <Icon d={IC.team} /> ทีมงาน
             </button>
-            <button onClick={() => setBroadcastOpen(true)}
-                    className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[15.5px]
-                               text-red-600 hover:bg-red-50 font-medium transition-colors">
-              <Icon d={IC.alert} /> ประกาศฉุกเฉิน
-            </button>
             {[
               { ic: IC.trophy, t: 'กระดานผู้นำ' },
               { ic: IC.chart,  t: 'สถิติ' },
@@ -592,9 +587,9 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
 
           <div className="flex-1" />
 
-          {/* Emergency broadcast — placeholder รอฝั่งแอปรองรับ (push + แบนเนอร์) */}
+          {/* Emergency broadcast — เปิด modal ส่งประกาศจริง */}
           <button
-            onClick={() => alert('ประกาศฉุกเฉินถึงนักวิ่งทุกคน — ฟีเจอร์นี้ต้องรออัพเดตแอปฝั่งนักวิ่งก่อน (รับ push + แสดงแบนเนอร์)')}
+            onClick={() => setBroadcastOpen(true)}
             className="mx-3.5 mb-3.5 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[15.5px]
                        font-medium flex items-center justify-center gap-2 shadow-[0_2px_10px_rgba(220,38,38,.3)]
                        transition-colors">
