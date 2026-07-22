@@ -952,6 +952,8 @@ function BroadcastModal({ eventCode, srcId, runners, onClose }: {
   const [sending, setSending] = useState(false);
   const [err, setErr]         = useState('');
   const [active, setActive]   = useState<{ id: string; message: string; target: string }[]>([]);
+  const [search, setSearch]   = useState('');
+  const [filter, setFilter]   = useState('all');
 
   useEffect(() => {
     if (!srcId) return;
@@ -1000,6 +1002,32 @@ function BroadcastModal({ eventCode, srcId, runners, onClose }: {
       });
     } catch { /* ignore */ }
   }
+
+  // ── กรอง + ค้นหา ผู้รับ (สำหรับงานใหญ่ 1000+ คน) ──
+  const RUNNING = ['active', 'stationary', 'no_signal'];
+  const slowThreshold = (() => {
+    const ds = runners.filter(r => RUNNING.includes(r.runnerStatus)).map(r => r.distance).sort((a, b) => a - b);
+    if (ds.length === 0) return -1;
+    return ds[Math.min(Math.floor(ds.length * 0.3), ds.length - 1)];
+  })();
+  const filtered = runners.filter(r => {
+    if (filter === 'running' && r.runnerStatus !== 'active') return false;
+    if (filter === 'stationary' && r.runnerStatus !== 'stationary') return false;
+    if (filter === 'no_signal' && r.runnerStatus !== 'no_signal') return false;
+    if (filter === 'finished' && r.runnerStatus !== 'finished') return false;
+    if (filter === 'sos' && r.runnerStatus !== 'sos') return false;
+    if (filter === 'off_route' && !r.offRoute) return false;
+    if (filter === 'slow' && !(RUNNING.includes(r.runnerStatus) && r.distance <= slowThreshold)) return false;
+    const q = search.trim().toLowerCase();
+    if (q && !r.displayName.toLowerCase().includes(q) && !(r.bibNumber ?? '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const selectAllShown = () => setSelected(prev => { const n = new Set(prev); filtered.forEach(r => n.add(r.userId)); return n; });
+  const CHIPS: [string, string][] = [
+    ['all', 'ทั้งหมด'], ['running', 'กำลังวิ่ง'], ['stationary', 'หยุดนิ่ง'],
+    ['no_signal', 'ไม่มีสัญญาณ'], ['slow', 'วิ่งช้า'], ['off_route', 'หลุดเส้นทาง'],
+    ['finished', 'เข้าเส้นชัย'], ['sos', 'SOS'],
+  ];
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
@@ -1055,20 +1083,38 @@ function BroadcastModal({ eventCode, srcId, runners, onClose }: {
           </div>
 
           {target === 'selected' && (
-            <div className="border border-line rounded-xl max-h-52 overflow-y-auto divide-y divide-line/60">
-              {runners.length === 0 && <div className="p-3 text-[14px] text-faint">ยังไม่มีนักวิ่ง</div>}
-              {runners.map(r => (
-                <label key={r.userId} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-bg">
-                  <input type="checkbox" checked={selected.has(r.userId)} onChange={() => toggle(r.userId)}
-                         className="w-4 h-4 accent-brand" />
-                  <span className="text-[15px] flex-1">{r.displayName}</span>
-                  {r.bibNumber && <span className="text-[13px] text-faint font-num">#{r.bibNumber}</span>}
-                </label>
-              ))}
+            <div className="space-y-2">
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                     placeholder="ค้นหาชื่อ หรือ BIB..."
+                     className="w-full h-10 px-3 rounded-xl border border-line focus:border-brand outline-none text-[14.5px]" />
+              <div className="flex flex-wrap gap-1.5">
+                {CHIPS.map(([v, l]) => (
+                  <button key={v} onClick={() => setFilter(v)}
+                          className={`h-8 px-3 rounded-lg text-[13px] font-medium transition-colors
+                                      ${filter === v ? 'bg-brand text-white' : 'bg-bg text-sub border border-line'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-3 text-[13px]">
+                <button onClick={selectAllShown} className="text-brand font-medium hover:underline">
+                  เลือกทั้งหมดที่แสดง ({filtered.length})
+                </button>
+                <button onClick={() => setSelected(new Set())} className="text-faint hover:underline">ล้าง</button>
+                <span className="ml-auto text-faint">เลือกแล้ว {selected.size} คน</span>
+              </div>
+              <div className="border border-line rounded-xl max-h-52 overflow-y-auto divide-y divide-line/60">
+                {filtered.length === 0 && <div className="p-3 text-[14px] text-faint">ไม่พบนักวิ่ง</div>}
+                {filtered.map(r => (
+                  <label key={r.userId} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-bg">
+                    <input type="checkbox" checked={selected.has(r.userId)} onChange={() => toggle(r.userId)}
+                           className="w-4 h-4 accent-brand" />
+                    <span className="text-[15px] flex-1">{r.displayName}</span>
+                    {r.bibNumber && <span className="text-[13px] text-faint font-num">#{r.bibNumber}</span>}
+                  </label>
+                ))}
+              </div>
             </div>
-          )}
-          {target === 'selected' && selected.size > 0 && (
-            <div className="text-[13px] text-faint">เลือกแล้ว {selected.size} คน</div>
           )}
 
           {err && <div className="text-[13.5px] text-red-600">{err}</div>}
