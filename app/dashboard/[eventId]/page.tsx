@@ -15,6 +15,11 @@ import OrganizerMap from '@/components/OrganizerMap';
 
 type FilterMode = 'all' | 'sos' | 'stationary' | 'no_signal' | 'off_route' | 'finished' | 'not_started' | 'top20';
 
+// ผู้นำ (🥇) จะถูกครองก็ต่อเมื่อ: งานเริ่มแล้ว + วิ่งเกินระยะขั้นต่ำ (กัน GPS drift ตอนเพิ่งกดเริ่ม)
+const LEADER_MIN_DISTANCE_M = 100;
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
 // ─── Small SVG icons (Feather style) ─────────────────────────────────────────
 function Icon({ d, size = 18, className = '' }: { d: string; size?: number; className?: string }) {
   return (
@@ -221,6 +226,9 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
           eventName:     (club?.name as string) ?? org?.eventName ?? eventId,
           isActive:      org?.isActive ?? true,
           totalDistance: (club?.routeDistanceKm as number) ?? org?.totalDistance,
+          // งานคลับวิ่ง: liveRunActive = organizer กด Start Run แล้ว; งานปกติไม่มีสัญญาณนี้ → ถือว่าเริ่ม
+          isLive:        club ? ((club.liveRunActive as boolean) ?? false) : true,
+          startTime:     (club?.liveStartedAt as { toDate?: () => Date } | undefined)?.toDate?.(),
         });
       } catch (err) {
         console.error('event info load error:', err);
@@ -366,10 +374,25 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
     setBibEdit(null);
   }
 
+  // ── งานเริ่มจริงหรือยัง (club: กด Start Run = liveRunActive; กันค้างข้ามวันด้วยวันที่เริ่ม) ──
+  const raceStarted = useMemo(() => {
+    if (!event) return false;
+    if (event.isLive === false) return false;                              // คลับที่ยังไม่กด Start Run
+    if (event.startTime && !isSameDay(event.startTime, new Date())) return false;  // เริ่มค้างจากวันก่อน
+    return true;
+  }, [event]);
+
+  // ── ผู้นำ: อันดับ 1 ที่ "งานเริ่มแล้ว + วิ่งเกิน 100 ม." เท่านั้น (กัน GPS drift ก่อนออกตัว) ──
+  const leader = useMemo(
+    () => (raceStarted
+      ? runners.find(r =>
+          r.rank === 1 && r.runnerStatus === 'active' && r.lat !== 0 &&
+          r.distance > LEADER_MIN_DISTANCE_M) ?? null
+      : null),
+    [runners, raceStarted]);
+
   // ── เส้นทางผู้นำจาก history จริง (iOS เขียน liveLocations/{uid}/history ตั้งแต่ออกตัว) ──
-  const leaderId = useMemo(
-    () => runners.find(r => r.rank === 1 && r.runnerStatus === 'active' && r.lat !== 0)?.userId ?? null,
-    [runners]);
+  const leaderId = leader?.userId ?? null;
 
   useEffect(() => {
     if (!authChecked || !leaderId || !srcId) { setServerTrail([]); return; }
@@ -388,7 +411,6 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
 
   // ── fallback: สะสมพิกัดสดฝั่งเว็บ (เผื่อเครื่องนักวิ่งรุ่นเก่าไม่เขียน history) ──
   useEffect(() => {
-    const leader = runners.find(r => r.rank === 1 && r.runnerStatus === 'active' && r.lat !== 0);
     if (!leader) return;
     const t = leaderTrailRef.current;
     if (t.userId !== leader.userId) { t.userId = leader.userId; t.pts = []; }  // ผู้นำเปลี่ยนคน → เริ่มเส้นใหม่
@@ -633,6 +655,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
         <div className="relative flex-1 overflow-hidden">
           <OrganizerMap
             runners={runners}
+            leader={leader}
             trackedUserId={trackedUserId}
             selectedRunner={selectedRunner}
             gpxPoints={gpxPoints}

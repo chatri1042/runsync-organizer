@@ -170,9 +170,11 @@ function ClusteredRunnerMarkers({ runners, onRunnerClick }: {
 }
 
 // ─── Leader Marker ────────────────────────────────────────────────────────────
-function LeaderMarker({ runners }: { runners: Runner[] }) {
-  const leader = runners.find(r => r.rank === 1 && r.runnerStatus === 'active' && r.lat !== 0);
+function LeaderMarker({ leader, selectedUserId }: { leader: Runner | null; selectedUserId: string | null }) {
+  // leader ถูกกรองมาแล้วจากหน้า dashboard (งานเริ่มแล้ว + วิ่งเกินระยะขั้นต่ำ) — ถ้า null คือยังไม่มีผู้นำ
   if (!leader) return null;
+  // ผู้นำที่ถูกเลือกอยู่ จะมีป้ายชื่อจาก SelectedHighlight (📍) แล้ว — ซ่อนป้ายชื่อของหมุดผู้นำ กันชื่อซ้ำสองอัน
+  const isSelected = selectedUserId === leader.userId;
 
   return (
     <AdvancedMarker position={{ lat: leader.lat, lng: leader.lng }} zIndex={300}>
@@ -182,10 +184,12 @@ function LeaderMarker({ runners }: { runners: Runner[] }) {
                         flex items-center justify-center shadow-xl">
           <span className="text-base">🥇</span>
         </div>
-        <div className="mt-1 bg-brand text-white text-xs font-bold
-                        px-2 py-0.5 rounded-full whitespace-nowrap shadow">
-          {leader.displayName.split(' ')[0]}
-        </div>
+        {!isSelected && (
+          <div className="mt-1 bg-brand text-white text-xs font-bold
+                          px-2 py-0.5 rounded-full whitespace-nowrap shadow">
+            {leader.displayName.split(' ')[0]}
+          </div>
+        )}
       </div>
     </AdvancedMarker>
   );
@@ -305,6 +309,7 @@ function SelectedHighlight({ runners, selectedRunner }: {
 // ─── Main Map Component ───────────────────────────────────────────────────────
 interface OrganizerMapProps {
   runners:        Runner[];
+  leader:         Runner | null;
   trackedUserId:  string | null;
   selectedRunner: Runner | null;
   gpxPoints:      google.maps.LatLngLiteral[];
@@ -316,7 +321,7 @@ interface OrganizerMapProps {
 }
 
 export default function OrganizerMap({
-  runners, trackedUserId, selectedRunner, gpxPoints, leaderTrail, showLegend, onRunnerClick,
+  runners, leader, trackedUserId, selectedRunner, gpxPoints, leaderTrail, showLegend, onRunnerClick,
   centerLat = 13.7563, centerLng = 100.5018,
 }: OrganizerMapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -335,7 +340,7 @@ export default function OrganizerMap({
           {gpxPoints.length > 0 && <GpxRoute points={gpxPoints} />}
           {leaderTrail.length >= 2 && <LeaderTrail points={leaderTrail} />}
           <ClusteredRunnerMarkers runners={runners} onRunnerClick={onRunnerClick} />
-          <LeaderMarker runners={runners} />
+          <LeaderMarker leader={leader} selectedUserId={selectedRunner?.userId ?? null} />
           <AlertMarkers runners={runners} onRunnerClick={onRunnerClick} />
           <TrackedFollow runners={runners} trackedUserId={trackedUserId} />
           <SelectedHighlight runners={runners} selectedRunner={selectedRunner} />

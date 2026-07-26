@@ -45,8 +45,9 @@ export interface OrganizerEvent {
   eventName: string;
   password?: string; // ไม่อ่านจาก client แล้ว — ตรวจฝั่ง server เท่านั้น
   isActive: boolean;
-  startTime?: Date;
+  startTime?: Date;       // club: liveStartedAt (เวลาที่กด Start Run)
   endTime?: Date;
+  isLive?: boolean;       // club: liveRunActive — งานเริ่มวิ่งจริงแล้วหรือยัง
   totalDistance?: number; // race distance in km
 }
 
