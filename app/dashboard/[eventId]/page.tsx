@@ -47,6 +47,26 @@ const IC = {
   x:       'M18 6L6 18M6 6l12 12',
 };
 
+// ─── Avatar (รูปโปรไฟล์ + fallback ตัวอักษรแรกของชื่อ) ────────────────────────
+function Avatar({ src, name, size = 32, ring = false }: {
+  src?: string; name: string; size?: number; ring?: boolean;
+}) {
+  const initial = (name?.trim()?.[0] ?? '?').toUpperCase();
+  const ringCls = ring ? 'ring-2 ring-brand ring-offset-1' : 'border border-line';
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={name} width={size} height={size}
+         referrerPolicy="no-referrer"
+         className={`rounded-full object-cover shrink-0 ${ringCls}`}
+         style={{ width: size, height: size }} />
+  ) : (
+    <div className={`rounded-full shrink-0 flex items-center justify-center bg-brand/15 text-brand font-semibold ${ringCls}`}
+         style={{ width: size, height: size, fontSize: size * 0.42 }}>
+      {initial}
+    </div>
+  );
+}
+
 export default function DashboardPage({ params }: { params: { eventId: string } }) {
   const router  = useRouter();
   const eventId = params.eventId;
@@ -297,6 +317,10 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
         const pmap: Record<string, { docId: string; bib?: string }> = {};
         snapshot.docs.forEach(d => {
           const data = d.data();
+          // ✅ ตัดคนใน waitlist (คิวรอ) ออกจากรายชื่อหลัก — ให้ตรงกับฝั่ง registrations
+          //    ยอดผู้เข้าร่วมจะนับเฉพาะคน confirmed จริง (ไม่รวมคิวรอ)
+          const pStatus = (data.status as string) ?? 'confirmed';
+          if (pStatus === 'waitlisted') return;
           const userId = (data.userId as string) ?? d.id;
           if (!pmap[userId]) pmap[userId] = { docId: d.id, bib: data.bibNumber as string | undefined };
           if (seen.has(userId)) return;   // กัน join ซ้ำหลาย doc
@@ -346,6 +370,15 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
     return () => { cancelled = true; unsubscribe(); };
   }, [authChecked, srcId, isClubEvent]);
 
+  // ── รูปโปรไฟล์ตาม userId (fallback ให้หมุด/การ์ด เผื่อ liveLocations ไม่มี photoURL) ──
+  const photoByUid = useMemo(() => {
+    const m: Record<string, string> = {};
+    [...participants, ...clubRegs].forEach(p => {
+      if (p.photoURL && !m[p.userId]) m[p.userId] = p.photoURL;
+    });
+    return m;
+  }, [participants, clubRegs]);
+
   // ── Enrich: สถานะ + อันดับ + off-route (คำนวณใหม่เมื่อข้อมูล/route เปลี่ยน) ──
   const runners: Runner[] = useMemo(() => {
     const now = new Date();
@@ -354,12 +387,17 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
       const offRoute = gpxPoints.length >= 2 && r.lat !== 0
         ? distanceToRouteMeters(r.lat, r.lng, gpxPoints) > OFF_ROUTE_THRESHOLD_M
         : false;
-      return { ...r, bibNumber: partByUid[r.userId]?.bib ?? r.bibNumber, runnerStatus, offRoute, rank: 0 };
+      return {
+        ...r,
+        photoURL: r.photoURL || photoByUid[r.userId],
+        bibNumber: partByUid[r.userId]?.bib ?? r.bibNumber,
+        runnerStatus, offRoute, rank: 0,
+      };
     });
     list.sort((a, b) => b.distance - a.distance);
     list.forEach((r, i) => { r.rank = i + 1; });
     return list;
-  }, [rawRunners, event?.totalDistance, gpxPoints, lastUpdate, partByUid]);
+  }, [rawRunners, event?.totalDistance, gpxPoints, lastUpdate, partByUid, photoByUid]);
 
   async function saveBib(userId: string) {
     const bib = bibDraft.trim();
@@ -720,7 +758,9 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
               <div className="absolute top-36 left-4 z-30 bg-surface border border-line rounded-2xl
                               shadow-float px-5 py-4 w-[290px]">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <Avatar src={r.photoURL} name={r.displayName} size={46} ring />
+                    <div className="min-w-0">
                     <div className="text-[17px] font-semibold truncate">
                       {r.displayName}
                       {r.bibNumber && <span className="font-num text-[14px] text-faint ml-1.5">{r.bibNumber}</span>}
@@ -735,6 +775,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                         <span className="text-[12.5px] text-purple-700 bg-purple-50 border border-purple-200
                                          rounded-full px-2 py-0.5">หลุดเส้นทาง</span>
                       )}
+                    </div>
                     </div>
                   </div>
                   <button onClick={() => setSelectedRunner(null)}
@@ -923,8 +964,13 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                       <tr key={p.userId} className="hover:bg-bg/60">
                         <td className="px-4 py-2.5 border-b border-line/50 font-num text-faint">—</td>
                         <td className="px-4 py-2.5 border-b border-line/50 text-[16px] font-medium">
-                          {p.displayName}
-                          {p.teamName && <span className="text-[13.5px] text-faint ml-2">({p.teamName})</span>}
+                          <div className="flex items-center gap-2.5">
+                            <Avatar src={p.photoURL} name={p.displayName} size={32} />
+                            <span>
+                              {p.displayName}
+                              {p.teamName && <span className="text-[13.5px] text-faint ml-2">({p.teamName})</span>}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-2.5 border-b border-line/50 text-faint">—</td>
                         <td className="px-4 py-2.5 border-b border-line/50 text-faint">—</td>
@@ -954,11 +1000,17 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                           {String(r.rank).padStart(2, '0')}
                         </td>
                         <td className="px-4 py-2.5 border-b border-line/50 text-[16px] font-medium">
-                          {r.displayName}
-                          {r.offRoute && (
-                            <span className="ml-2 text-[12.5px] text-purple-700 bg-purple-50 border border-purple-200
-                                             rounded-full px-2 py-0.5">หลุดเส้นทาง</span>
-                          )}
+                          <div className="flex items-center gap-2.5">
+                            <Avatar src={r.photoURL} name={r.displayName} size={32}
+                                    ring={selectedRunner?.userId === r.userId} />
+                            <span>
+                              {r.displayName}
+                              {r.offRoute && (
+                                <span className="ml-2 text-[12.5px] text-purple-700 bg-purple-50 border border-purple-200
+                                                 rounded-full px-2 py-0.5">หลุดเส้นทาง</span>
+                              )}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-2.5 border-b border-line/50 font-num text-[15px] text-sub">
                           {r.bibNumber ?? '—'}

@@ -291,12 +291,26 @@ function SelectedHighlight({ runners, selectedRunner }: {
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
                           w-5 h-5 rounded-full bg-brand border-2 border-white shadow-lg" />
         )}
-        {/* ป้ายชื่อ — ยกขึ้นเหนือหมุด + หางสามเหลี่ยมชี้ลง ไม่ให้วง SOS บังชื่อ */}
-        <div className="absolute left-1/2 -translate-x-1/2 -translate-y-[66px]
+        {/* รูปโปรไฟล์ + ป้ายชื่อ — ยกขึ้นเหนือหมุด + หางสามเหลี่ยมชี้ลง ไม่ให้วง SOS บังชื่อ */}
+        <div className="absolute left-1/2 -translate-x-1/2 -translate-y-[92px]
                         flex flex-col items-center">
-          <div className="bg-white text-ink text-sm font-bold px-3 py-1.5 rounded-full
+          {/* รูปโปรไฟล์ของคนที่ถูกเลือก (fallback = ตัวอักษรแรกของชื่อ) */}
+          <div className="w-12 h-12 rounded-full border-[3px] border-brand bg-white shadow-xl
+                          overflow-hidden flex items-center justify-center">
+            {selectedRunner.photoURL ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={selectedRunner.photoURL} alt={selectedRunner.displayName}
+                   referrerPolicy="no-referrer"
+                   className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-brand text-lg font-bold">
+                {(selectedRunner.displayName?.trim()?.[0] ?? '?').toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div className="-mt-1.5 bg-white text-ink text-sm font-bold px-3 py-1 rounded-full
                           shadow-xl whitespace-nowrap border-2 border-brand">
-            📍 {selectedRunner.displayName}
+            {selectedRunner.displayName}
           </div>
           <div className="w-0 h-0 -mt-px border-l-[6px] border-r-[6px] border-t-[7px]
                           border-l-transparent border-r-transparent border-t-brand" />
