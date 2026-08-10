@@ -124,6 +124,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
   const [cleanMode,      setCleanMode]      = useState(false);
   const [toast,          setToast]          = useState('');
   const [teamOpen,       setTeamOpen]       = useState(false);
+  const [allowOpen,      setAllowOpen]      = useState(false);
   const [broadcastOpen,  setBroadcastOpen]  = useState(false);
   const [leaderTrail,    setLeaderTrail]    = useState<{lat:number;lng:number}[]>([]);
   const [serverTrail,    setServerTrail]    = useState<{lat:number;lng:number}[]>([]);
@@ -663,6 +664,13 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                                text-sub hover:bg-bg hover:text-ink transition-colors">
               <Icon d={IC.team} /> ทีมงาน
             </button>
+            {isClubEvent && (
+              <button onClick={() => setAllowOpen(true)}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[15.5px]
+                                 text-sub hover:bg-bg hover:text-ink transition-colors">
+                <Icon d={IC.shield} /> รายชื่อผู้ลงทะเบียน
+              </button>
+            )}
             {[
               { ic: IC.trophy, t: 'กระดานผู้นำ' },
               { ic: IC.chart,  t: 'สถิติ' },
@@ -1072,6 +1080,11 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
         <BroadcastModal eventCode={eventId} srcId={srcId} runners={runners}
                         onClose={() => setBroadcastOpen(false)} />
       )}
+
+      {/* ── Modal รายชื่อผู้ลงทะเบียน (allowlist) ── */}
+      {allowOpen && (
+        <AllowlistModal eventCode={eventId} onClose={() => setAllowOpen(false)} />
+      )}
     </div>
   );
 }
@@ -1267,6 +1280,132 @@ function BroadcastModal({ eventCode, srcId, runners, onClose }: {
 }
 
 // ─── จัดการทีมงาน: เจ้าของงานเพิ่ม/ลบ email ทีมงานเองได้ ─────────────────────
+// ─── รายชื่อผู้ลงทะเบียน (allowlist): ล็อกงานให้เฉพาะคนที่ลงทะเบียนจริง (match อีเมล Google) ───
+function AllowlistModal({ eventCode, onClose }: { eventCode: string; onClose: () => void }) {
+  const [emails, setEmails] = useState<string[]>([]);
+  const [lock,   setLock]   = useState(false);
+  const [text,   setText]   = useState('');
+  const [busy,   setBusy]   = useState(false);
+  const [err,    setErr]    = useState('');
+
+  async function load() {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`/api/event-allowlist?code=${encodeURIComponent(eventCode)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || 'โหลดไม่สำเร็จ');
+      setEmails(j.emails ?? []); setLock(j.registrationLock === true);
+    } catch (e) { setErr(e instanceof Error ? e.message : 'โหลดไม่สำเร็จ'); }
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  async function save() {
+    if (!text.trim()) return;
+    setBusy(true); setErr('');
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/event-allowlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: eventCode, text }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || 'บันทึกไม่สำเร็จ');
+      setText(''); await load();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ'); }
+    finally { setBusy(false); }
+  }
+  async function removeOne(email: string) {
+    setBusy(true); setErr('');
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/event-allowlist', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: eventCode, email }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || 'ลบไม่สำเร็จ'); }
+      await load();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'ลบไม่สำเร็จ'); }
+    finally { setBusy(false); }
+  }
+  async function clearAll() {
+    setBusy(true); setErr('');
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/event-allowlist', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: eventCode }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || 'ล้างไม่สำเร็จ'); }
+      await load();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'ล้างไม่สำเร็จ'); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-surface w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
+           onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-brand text-white flex items-center justify-center">
+              <Icon d={IC.shield} size={18} />
+            </div>
+            <div>
+              <div className="text-[17px] font-semibold">รายชื่อผู้ลงทะเบียน</div>
+              <div className={`text-[12.5px] ${lock ? 'text-brand' : 'text-faint'}`}>
+                {lock ? '● ล็อก: เฉพาะคนในรายชื่อสมัครได้' : '○ ยังไม่ล็อก (ใครก็สมัครได้)'}
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-faint hover:text-ink text-[15px]">ปิด</button>
+        </div>
+
+        <div className="p-5 overflow-y-auto space-y-4">
+          <div className="text-[13.5px] text-sub leading-relaxed">
+            วางอีเมลผู้ลงทะเบียน (จากชีตรับสมัคร) — คั่นด้วยขึ้นบรรทัด/คอมมา วางทั้งคอลัมน์ได้เลย ระบบดึงเฉพาะอีเมลให้อัตโนมัติ ·
+            นักวิ่งที่อีเมล Google ตรงกับรายชื่อถึงจะกดเข้าร่วมได้
+          </div>
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={5}
+                    placeholder={'somchai@gmail.com\nnok@hotmail.com\n...'}
+                    className="w-full border border-line rounded-xl px-3 py-2.5 text-[14px] bg-bg
+                               focus:outline-none focus:ring-2 focus:ring-brand/40 resize-y font-en" />
+          {err && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-2.5 text-[13.5px]">{err}</div>}
+          <button onClick={save} disabled={busy || !text.trim()}
+                  className="w-full h-11 rounded-xl bg-brand text-white text-[15px] font-medium disabled:opacity-50 transition-colors">
+            {busy ? 'กำลังบันทึก...' : '+ เพิ่มเข้ารายชื่อ & ล็อกงาน'}
+          </button>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="text-[14px] font-semibold">ในรายชื่อ {emails.length} คน</div>
+            {emails.length > 0 && (
+              <button onClick={clearAll} disabled={busy}
+                      className="text-[13px] text-red-600 hover:text-red-700 disabled:opacity-50">
+                ล้างทั้งหมด &amp; ปลดล็อก
+              </button>
+            )}
+          </div>
+          <div className="divide-y divide-line rounded-xl border border-line max-h-[35vh] overflow-y-auto">
+            {emails.length === 0 ? (
+              <div className="text-center text-faint py-6 text-[13.5px]">ยังไม่มีรายชื่อ</div>
+            ) : emails.map(em => (
+              <div key={em} className="flex items-center justify-between px-4 py-2.5 text-[13.5px]">
+                <span className="truncate font-en">{em}</span>
+                <button onClick={() => removeOne(em)} disabled={busy}
+                        className="text-[12.5px] text-red-500 hover:text-red-700 ml-2 flex-shrink-0 disabled:opacity-50">ลบ</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TeamModal({ eventCode, onClose }: { eventCode: string; onClose: () => void }) {
   const [members,  setMembers]  = useState<{ email: string; role: string; addedBy?: string | null }[]>([]);
   const [role,     setRole]     = useState<'owner' | 'staff' | null>(null);
