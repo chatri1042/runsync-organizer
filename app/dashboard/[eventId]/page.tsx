@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, onSnapshot, doc, getDoc, query, where, orderBy, updateDoc, addDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -1287,6 +1287,32 @@ function AllowlistModal({ eventCode, onClose }: { eventCode: string; onClose: ()
   const [text,   setText]   = useState('');
   const [busy,   setBusy]   = useState(false);
   const [err,    setErr]    = useState('');
+  const [search, setSearch] = useState('');
+
+  // 📄 อัปโหลดไฟล์ Excel (.xlsx/.xls) หรือ CSV → ดึงอีเมลใส่ช่องข้อความ
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setErr('');
+    try {
+      const name = file.name.toLowerCase();
+      let raw = '';
+      if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+        const XLSX = await import('xlsx');
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        for (const sh of wb.SheetNames) raw += '\n' + XLSX.utils.sheet_to_csv(wb.Sheets[sh]);
+      } else {
+        raw = await file.text();
+      }
+      const found = raw.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) ?? [];
+      if (!found.length) { setErr('ไม่พบอีเมลในไฟล์'); return; }
+      const uniq = [...new Set(found.map(x => x.trim().toLowerCase()))];
+      setText(prev => (prev.trim() ? prev.trim() + '\n' : '') + uniq.join('\n'));
+    } catch (er) {
+      setErr('อ่านไฟล์ไม่สำเร็จ: ' + (er instanceof Error ? er.message : String(er)));
+    }
+  }
 
   async function load() {
     try {
@@ -1346,6 +1372,10 @@ function AllowlistModal({ eventCode, onClose }: { eventCode: string; onClose: ()
     finally { setBusy(false); }
   }
 
+  const q = search.trim().toLowerCase();
+  const shownEmails = q ? emails.filter(em => em.includes(q)) : emails;
+  const CAP = 300;
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-surface w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] flex flex-col"
@@ -1374,6 +1404,11 @@ function AllowlistModal({ eventCode, onClose }: { eventCode: string; onClose: ()
                     placeholder={'somchai@gmail.com\nnok@hotmail.com\n...'}
                     className="w-full border border-line rounded-xl px-3 py-2.5 text-[14px] bg-bg
                                focus:outline-none focus:ring-2 focus:ring-brand/40 resize-y font-en" />
+          <label className="flex items-center justify-center gap-2 h-10 rounded-xl border border-dashed border-line
+                            bg-bg text-[13.5px] text-sub hover:text-ink cursor-pointer transition-colors">
+            <input type="file" accept=".xlsx,.xls,.csv,.txt" className="hidden" onChange={handleFile} />
+            📄 หรืออัปโหลดไฟล์ Excel / CSV (ดึงอีเมลให้อัตโนมัติ)
+          </label>
           {err && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-2.5 text-[13.5px]">{err}</div>}
           <button onClick={save} disabled={busy || !text.trim()}
                   className="w-full h-11 rounded-xl bg-brand text-white text-[15px] font-medium disabled:opacity-50 transition-colors">
@@ -1389,16 +1424,29 @@ function AllowlistModal({ eventCode, onClose }: { eventCode: string; onClose: ()
               </button>
             )}
           </div>
+          {emails.length > 0 && (
+            <input value={search} onChange={e => setSearch(e.target.value)}
+                   placeholder="ค้นหาอีเมลในรายชื่อ..."
+                   className="w-full border border-line rounded-xl px-3 py-2 text-[13.5px] bg-bg
+                              focus:outline-none focus:ring-2 focus:ring-brand/40 font-en" />
+          )}
           <div className="divide-y divide-line rounded-xl border border-line max-h-[35vh] overflow-y-auto">
             {emails.length === 0 ? (
               <div className="text-center text-faint py-6 text-[13.5px]">ยังไม่มีรายชื่อ</div>
-            ) : emails.map(em => (
+            ) : shownEmails.length === 0 ? (
+              <div className="text-center text-faint py-6 text-[13.5px]">ไม่พบ &quot;{search}&quot;</div>
+            ) : shownEmails.slice(0, CAP).map(em => (
               <div key={em} className="flex items-center justify-between px-4 py-2.5 text-[13.5px]">
                 <span className="truncate font-en">{em}</span>
                 <button onClick={() => removeOne(em)} disabled={busy}
                         className="text-[12.5px] text-red-500 hover:text-red-700 ml-2 flex-shrink-0 disabled:opacity-50">ลบ</button>
               </div>
             ))}
+            {shownEmails.length > CAP && (
+              <div className="text-center text-faint py-3 text-[12.5px]">
+                แสดง {CAP} จาก {shownEmails.length} · พิมพ์ค้นหาเพื่อเจาะจง
+              </div>
+            )}
           </div>
         </div>
       </div>
