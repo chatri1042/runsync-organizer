@@ -131,7 +131,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
   const leaderTrailRef = useRef<{ userId: string | null; pts: {lat:number;lng:number}[] }>({ userId: null, pts: [] });
 
   // ลิงก์กลับเว็บหลัก RunSync (ตั้ง NEXT_PUBLIC_MAIN_SITE_URL ตอน deploy)
-  const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL ?? 'https://runsync.app';
+  const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL ?? 'https://runsync-web.vercel.app';
   const [search,         setSearch]         = useState('');
   const [filterMode,     setFilterMode]     = useState<FilterMode>('all');
 

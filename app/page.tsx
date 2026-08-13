@@ -212,7 +212,7 @@ export default function LoginPage() {
           RunSync Race Control · Powered by RunSync
         </p>
         <p className="text-center mt-3">
-          <a href={process.env.NEXT_PUBLIC_MAIN_SITE_URL ?? 'https://runsync.app'}
+          <a href={process.env.NEXT_PUBLIC_MAIN_SITE_URL ?? 'https://runsync-web.vercel.app'}
              className="text-[14.5px] text-sub hover:text-brand transition-colors">
             ← กลับไปเว็บหลัก RunSync
           </a>
