@@ -99,6 +99,25 @@ function LeaderTrail({ points }: { points: google.maps.LatLngLiteral[] }) {
   return null;
 }
 
+// ─── Selected runner trail (เส้นทางของนักวิ่งที่ผู้จัดคลิกเลือก สีน้ำเงิน) ──────
+function SelectedTrail({ points }: { points: google.maps.LatLngLiteral[] }) {
+  const map     = useMap();
+  const mapsLib = useMapsLibrary('maps');
+
+  useEffect(() => {
+    if (!map || !mapsLib || points.length < 2) return;
+    const glow = new mapsLib.Polyline({
+      map, path: points, strokeColor: '#2563EB', strokeOpacity: 0.25, strokeWeight: 10,
+    });
+    const main = new mapsLib.Polyline({
+      map, path: points, strokeColor: '#2563EB', strokeOpacity: 0.95, strokeWeight: 4,
+    });
+    return () => { glow.setMap(null); main.setMap(null); };
+  }, [map, mapsLib, points]);
+
+  return null;
+}
+
 // ─── SVG icons (data URI) สำหรับ google.maps.Marker ──────────────────────────
 function dotIconSvg(color: string, r = 8): string {
   const s = r * 2 + 6;
@@ -328,6 +347,7 @@ interface OrganizerMapProps {
   selectedRunner: Runner | null;
   gpxPoints:      google.maps.LatLngLiteral[];
   leaderTrail:    google.maps.LatLngLiteral[];
+  selectedTrail:  google.maps.LatLngLiteral[];
   showLegend:     boolean;
   onRunnerClick:  (r: Runner) => void;
   centerLat?:     number;
@@ -335,7 +355,7 @@ interface OrganizerMapProps {
 }
 
 export default function OrganizerMap({
-  runners, leader, trackedUserId, selectedRunner, gpxPoints, leaderTrail, showLegend, onRunnerClick,
+  runners, leader, trackedUserId, selectedRunner, gpxPoints, leaderTrail, selectedTrail, showLegend, onRunnerClick,
   centerLat = 13.7563, centerLng = 100.5018,
 }: OrganizerMapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
@@ -353,6 +373,7 @@ export default function OrganizerMap({
         >
           {gpxPoints.length > 0 && <GpxRoute points={gpxPoints} />}
           {leaderTrail.length >= 2 && <LeaderTrail points={leaderTrail} />}
+          {selectedTrail.length >= 2 && <SelectedTrail points={selectedTrail} />}
           <ClusteredRunnerMarkers runners={runners} onRunnerClick={onRunnerClick} />
           <LeaderMarker leader={leader} selectedUserId={selectedRunner?.userId ?? null} />
           <AlertMarkers runners={runners} onRunnerClick={onRunnerClick} />
@@ -382,6 +403,10 @@ export default function OrganizerMap({
             <div className="flex items-center gap-2.5">
               <div className="w-7 border-t-2 border-solid border-brand" />
               <span className="text-[14px] text-sub">เส้นทางผู้นำ 🥇</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 border-t-2 border-solid" style={{ borderColor: '#2563EB' }} />
+              <span className="text-[14px] text-sub">เส้นทางนักวิ่งที่เลือก</span>
             </div>
             <div className="flex items-center gap-2.5">
               <div className="w-5 h-5 rounded-full bg-brand/90 border-2 border-white shadow

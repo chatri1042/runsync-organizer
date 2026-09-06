@@ -128,6 +128,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
   const [broadcastOpen,  setBroadcastOpen]  = useState(false);
   const [leaderTrail,    setLeaderTrail]    = useState<{lat:number;lng:number}[]>([]);
   const [serverTrail,    setServerTrail]    = useState<{lat:number;lng:number}[]>([]);
+  const [selectedTrail,  setSelectedTrail]  = useState<{lat:number;lng:number}[]>([]);
   const leaderTrailRef = useRef<{ userId: string | null; pts: {lat:number;lng:number}[] }>({ userId: null, pts: [] });
 
   // ลิงก์กลับเว็บหลัก RunSync (ตั้ง NEXT_PUBLIC_MAIN_SITE_URL ตอน deploy)
@@ -448,6 +449,24 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
     return () => unsub();
   }, [authChecked, srcId, leaderId]);
 
+  // ── เส้นทางของ "นักวิ่งที่เลือก" — คลิกใครก็เห็นเส้นของคนนั้น (จาก history subcollection) ──
+  //    ทุกคนเขียน history ของตัวเอง (iOS + Android หลังฟิกซ์) → ผู้จัดตรวจเส้นทาง/หาคนหลงได้
+  const selectedTrailId = selectedRunner?.userId ?? null;
+  useEffect(() => {
+    if (!authChecked || !selectedTrailId || !srcId) { setSelectedTrail([]); return; }
+    const q = query(
+      collection(db, 'events', srcId, 'liveLocations', selectedTrailId, 'history'),
+      orderBy('timestamp'));
+    const unsub = onSnapshot(q, snap => {
+      const pts = snap.docs.map(d => {
+        const v = d.data();
+        return { lat: (v.lat as number) ?? 0, lng: (v.lon as number) ?? (v.lng as number) ?? 0 };
+      }).filter(p => p.lat !== 0 || p.lng !== 0);
+      setSelectedTrail(pts);
+    }, err => console.error('selected history read error:', err));
+    return () => unsub();
+  }, [authChecked, srcId, selectedTrailId]);
+
   // ── fallback: สะสมพิกัดสดฝั่งเว็บ (เผื่อเครื่องนักวิ่งรุ่นเก่าไม่เขียน history) ──
   useEffect(() => {
     if (!leader) return;
@@ -706,6 +725,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
             selectedRunner={selectedRunner}
             gpxPoints={gpxPoints}
             leaderTrail={serverTrail.length >= 2 ? serverTrail : leaderTrail}
+            selectedTrail={selectedRunner && selectedRunner.userId !== leaderId ? selectedTrail : []}
             showLegend={!cleanMode}
             onRunnerClick={setSelectedRunner}
           />
