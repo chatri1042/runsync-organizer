@@ -770,10 +770,10 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
             trackedUserId={trackedUserId}
             selectedRunner={selectedRunner}
             gpxPoints={gpxPoints}
-            leaderTrail={selectedRunner && selectedRunner.userId !== leaderId
+            leaderTrail={selectedRunner
               ? []
               : (serverTrail.length >= 2 ? serverTrail : leaderTrail)}
-            selectedTrail={selectedRunner && selectedRunner.userId !== leaderId
+            selectedTrail={selectedRunner
               ? (selectedTrail.length >= 2 ? selectedTrail : selectedLiveTrail)
               : []}
             showLegend={!cleanMode}

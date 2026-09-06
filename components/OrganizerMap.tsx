@@ -51,22 +51,22 @@ function GpxRoute({ points }: { points: google.maps.LatLngLiteral[] }) {
   useEffect(() => {
     if (!map || !mapsLib || points.length === 0) return;
 
-    // เส้น glow ด้านหลัง
+    // เส้น GPX = ม่วงอ่อนๆ เป็นพื้นหลัง แสดงตลอดทุกกรณี ไม่แข่งกับเส้นนักวิ่ง (ส้ม/น้ำเงิน)
     const glowLine = new mapsLib.Polyline({
       map,
       path:          points,
-      strokeColor:   '#A855F7',
-      strokeOpacity: 0.25,
-      strokeWeight:  10,
+      strokeColor:   '#C9B6F2',
+      strokeOpacity: 0.15,
+      strokeWeight:  8,
     });
 
-    // เส้นหลัก solid สีม่วง
+    // เส้นหลัก ม่วงอ่อน โปร่ง บางกว่าเส้นนักวิ่ง
     const mainLine = new mapsLib.Polyline({
       map,
       path:          points,
-      strokeColor:   '#A855F7',
-      strokeOpacity: 0.9,
-      strokeWeight:  4,
+      strokeColor:   '#B79CEA',
+      strokeOpacity: 0.5,
+      strokeWeight:  3,
     });
 
     const bounds = new google.maps.LatLngBounds();
