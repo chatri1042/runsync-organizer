@@ -130,6 +130,8 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
   const [serverTrail,    setServerTrail]    = useState<{lat:number;lng:number}[]>([]);
   const [selectedTrail,  setSelectedTrail]  = useState<{lat:number;lng:number}[]>([]);
   const leaderTrailRef = useRef<{ userId: string | null; pts: {lat:number;lng:number}[] }>({ userId: null, pts: [] });
+  const selectedTrailRef = useRef<{ userId: string | null; pts: {lat:number;lng:number}[] }>({ userId: null, pts: [] });
+  const [selectedLiveTrail, setSelectedLiveTrail] = useState<{lat:number;lng:number}[]>([]);
 
   // ลิงก์กลับเว็บหลัก RunSync (ตั้ง NEXT_PUBLIC_MAIN_SITE_URL ตอน deploy)
   const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL ?? 'https://runsync-web.vercel.app';
@@ -481,6 +483,24 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runners]);
 
+  // ── fallback ของ "นักวิ่งที่เลือก": สะสมพิกัดสดฝั่งเว็บ (ใช้ได้ทันทีแม้ยังไม่มี history) ──
+  //    ผูกกับคนที่คลิก ไม่ผูกกับอันดับ → ไม่รีเซ็ตตอนอันดับสลับ เหมาะกับ Android ก่อน build ฟิกซ์ history
+  useEffect(() => {
+    const sid = selectedRunner?.userId;
+    if (!sid) { selectedTrailRef.current = { userId: null, pts: [] }; setSelectedLiveTrail([]); return; }
+    const cur = runners.find(r => r.userId === sid);
+    if (!cur || (cur.lat === 0 && cur.lng === 0)) return;
+    const t = selectedTrailRef.current;
+    if (t.userId !== sid) { t.userId = sid; t.pts = []; }
+    const last = t.pts[t.pts.length - 1];
+    if (!last || Math.abs(last.lat - cur.lat) + Math.abs(last.lng - cur.lng) > 0.00005) {
+      t.pts.push({ lat: cur.lat, lng: cur.lng });
+      if (t.pts.length > 3000) t.pts.shift();
+      setSelectedLiveTrail([...t.pts]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runners, selectedRunner?.userId]);
+
   // ── คนที่ถูก track อยู่แล้วเข้าเส้นชัย → หยุดติดตามอัตโนมัติ (ความเป็นส่วนตัว) ──
   useEffect(() => {
     if (!trackedUserId) return;
@@ -725,7 +745,9 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
             selectedRunner={selectedRunner}
             gpxPoints={gpxPoints}
             leaderTrail={serverTrail.length >= 2 ? serverTrail : leaderTrail}
-            selectedTrail={selectedRunner && selectedRunner.userId !== leaderId ? selectedTrail : []}
+            selectedTrail={selectedRunner && selectedRunner.userId !== leaderId
+              ? (selectedTrail.length >= 2 ? selectedTrail : selectedLiveTrail)
+              : []}
             showLegend={!cleanMode}
             onRunnerClick={setSelectedRunner}
           />
