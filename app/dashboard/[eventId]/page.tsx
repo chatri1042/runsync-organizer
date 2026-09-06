@@ -132,6 +132,10 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
   const leaderTrailRef = useRef<{ userId: string | null; pts: {lat:number;lng:number}[] }>({ userId: null, pts: [] });
   const selectedTrailRef = useRef<{ userId: string | null; pts: {lat:number;lng:number}[] }>({ userId: null, pts: [] });
   const [selectedLiveTrail, setSelectedLiveTrail] = useState<{lat:number;lng:number}[]>([]);
+  // ── โหมดชื่อ: 'google' = ชื่อ Google (จาก liveLocations) / 'profile' = ชื่อโปรไฟล์ (users, เหมือนหน้า admin) ──
+  const [nameMode, setNameMode] = useState<'google' | 'profile'>('google');
+  const [profileNameByUid, setProfileNameByUid] = useState<Record<string, string>>({});
+  const profileNameCache = useRef<Record<string, string>>({});
 
   // ลิงก์กลับเว็บหลัก RunSync (ตั้ง NEXT_PUBLIC_MAIN_SITE_URL ตอน deploy)
   const MAIN_SITE = process.env.NEXT_PUBLIC_MAIN_SITE_URL ?? 'https://runsync-web.vercel.app';
@@ -383,6 +387,25 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
     return m;
   }, [participants, clubRegs]);
 
+  // ── ชื่อโปรไฟล์ตาม userId (จาก users collection เหมือนหน้า admin) — ดึงเฉพาะนักวิ่งในสนาม, cache กันอ่านซ้ำ ──
+  useEffect(() => {
+    if (!authChecked) return;
+    const uids = Array.from(new Set(rawRunners.map(r => r.userId)))
+      .filter(u => u && !(u in profileNameCache.current));
+    if (uids.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      for (const uid of uids) {
+        try {
+          const snap = await getDoc(doc(db, 'users', uid));
+          profileNameCache.current[uid] = (snap.exists() ? (snap.data().displayName as string) : '') || '';
+        } catch { profileNameCache.current[uid] = ''; }
+      }
+      if (!cancelled) setProfileNameByUid({ ...profileNameCache.current });
+    })();
+    return () => { cancelled = true; };
+  }, [authChecked, rawRunners]);
+
   // ── Enrich: สถานะ + อันดับ + off-route (คำนวณใหม่เมื่อข้อมูล/route เปลี่ยน) ──
   const runners: Runner[] = useMemo(() => {
     const now = new Date();
@@ -391,8 +414,11 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
       const offRoute = gpxPoints.length >= 2 && r.lat !== 0
         ? distanceToRouteMeters(r.lat, r.lng, gpxPoints) > OFF_ROUTE_THRESHOLD_M
         : false;
+      const profileName = profileNameByUid[r.userId] || '';
+      const shownName = nameMode === 'profile' ? (profileName || r.displayName) : r.displayName;
       return {
         ...r,
+        displayName: shownName,
         photoURL: r.photoURL || photoByUid[r.userId],
         bibNumber: partByUid[r.userId]?.bib ?? r.bibNumber,
         runnerStatus, offRoute, rank: 0,
@@ -401,7 +427,7 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
     list.sort((a, b) => b.distance - a.distance);
     list.forEach((r, i) => { r.rank = i + 1; });
     return list;
-  }, [rawRunners, event?.totalDistance, gpxPoints, lastUpdate, partByUid, photoByUid]);
+  }, [rawRunners, event?.totalDistance, gpxPoints, lastUpdate, partByUid, photoByUid, nameMode, profileNameByUid]);
 
   async function saveBib(userId: string) {
     const bib = bibDraft.trim();
@@ -995,7 +1021,18 @@ export default function DashboardPage({ params }: { params: { eventId: string } 
                 <thead>
                   <tr className="text-left text-[13px] font-en font-semibold uppercase tracking-wide text-faint">
                     <th className="sticky top-0 bg-surface px-4 py-2.5 border-b border-line w-16">อันดับ</th>
-                    <th className="sticky top-0 bg-surface px-4 py-2.5 border-b border-line">ชื่อนักวิ่ง</th>
+                    <th className="sticky top-0 bg-surface px-4 py-2.5 border-b border-line">
+                      <button
+                        type="button"
+                        onClick={() => setNameMode(m => (m === 'google' ? 'profile' : 'google'))}
+                        className="inline-flex items-center gap-1.5 hover:text-brand transition-colors"
+                        title="สลับชื่อที่แสดง: Google ↔ โปรไฟล์ (เหมือนหน้า admin)">
+                        <span>ชื่อนักวิ่ง</span>
+                        <span className="text-[11px] font-normal normal-case text-faint bg-line/60 rounded px-1.5 py-0.5">
+                          {nameMode === 'profile' ? 'โปรไฟล์' : 'Google'} ⇄
+                        </span>
+                      </button>
+                    </th>
                     <th className="sticky top-0 bg-surface px-4 py-2.5 border-b border-line">BIB</th>
                     <th className="sticky top-0 bg-surface px-4 py-2.5 border-b border-line">เพซ</th>
                     <th className="sticky top-0 bg-surface px-4 py-2.5 border-b border-line">ระยะทาง</th>
